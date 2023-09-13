@@ -1,0 +1,136 @@
+2023.09.13
+    プロジェクト開始。案件に応募する際、このプロジェクトのURLを貼れるようにする事を目標とする。
+    【イメージ】
+        Todoアプリ
+        ├Webアプリケーション(フロント↔バックエンド↔DB)
+        └タスクの管理を目的とする
+            ├タスクには「期日」や「重要度」を設定可能とし、表示する際の「優先順位」をフロントエンドで算出する
+            ├スケジュール管理に近い側面を持たせたいが、あくまでタスク単位での管理とする事で直感的なUXを目指す
+            └自分にとって使いやすいものを作る
+
+    【ロードマップ】
+        1.目的と要件の明確化
+        2.技術スタックの選定
+        3.開発環境のセットアップ
+        4.データベース設計
+        5.バックエンド開発
+        6.フロントエンドの開発
+        7.テスト
+        8.デプロイ
+
+<<目的と要件の明確化>>
+    Todoアプリケーション
+        閲覧時点で優先順位の高いものを積極的に表示する
+        ユーザーに要求する操作は極力少なくしたい
+        ごみ捨て、家賃支払いなど、定期的な繰り返しタスクの登録も行いたい
+    
+    要件の整理
+    ・タスク
+        やった/やってない評価をする、操作対象となるレコード
+        期日、重要度、タグなどの設定が出来る
+    
+    ・スケジュール
+        時間が決まっている予定⇒タスク化可能(病院：１２：００～、等)
+        終日の予定⇒通知のみ
+
+    ・繰り返しイベント
+        ユーザー体験としては「タスクを発行するルールを設定する」に近い。
+        ex:毎週日曜と水曜はゴミ出し、月の第３火曜日はペットボトルゴミ出し、等
+
+    
+    実装のイメージから逆算
+        「当日実行可能なタスク」は、redisに持つ
+        APIエンドポイントは、以下のように動作する
+            ①Redisに'YYYY-MM-DD:<uuid>'等をキーとする値があるか確認
+            ⇒あれば値を返却
+            ②１で値がない場合、RDBから実行可能タスクの取得、Redisへの反映を行う
+            ③Redisの値を再度読み直し、結果をreturnする
+        
+        未来のタスク表示は？
+            繰り返しルールと、期日付きタスクをクライアントサイドで取り扱う。
+        
+        繰り返し条件の変更・修正は？
+            ルールテーブルを変更⇒Redis初期化メソッドをそのまま実行？
+                ルール由来のタスクが既にテーブルに存在する場合、INSERTしない等の判定が必要になる
+                使用中のルールの変更であれば、影響を受けるタスクを特定し再計算
+                未使用のルールの変更・追記であれば、タスクを計算し追加する必要もあるかも
+
+        当日に実行可能なタスク
+            ⇒参照先：Redis
+        
+        スケジュール表示
+            ⇒参照先：RDB.RecurringRules,RDB.Tasks
+
+        タスクの追加
+            追加したレコードにdueDateがある場合
+            ⇒
+        
+
+        テーブル構造
+            TaskTemplates (繰り返しタスクの設計図)
+                id: ユニークID
+                title: タスク名
+                description: 説明
+                user_id: ユーザーID
+                repeat_until_done:未達成の場合に翌日以降通知するかどうか
+                その他、タスク特有の属性
+
+            RecurringRules
+                id: ユニークID
+                frequency: 'DAILY','WEEKLY','MONTHLY':typeにあたる
+                day_of_week: 曜日指定
+                day_of_month: 1~31,-1は月末指定
+                week_of_month:1~5
+                adjust_for_holidays:祝日時にずらす
+                adjust_direction:祝日時にずらす方向(直前の平日/直後の平日)
+
+            Tasks (実行タスク)
+                id: ユニークID
+                template_id: TaskTemplatesテーブルのID
+                user_id: ユーザーID
+                status: タスクの状態（例：未完了、完了）
+                due_date:期日
+                begin_date:通知開始日
+
+            タスク問い合わせ
+                ←Redisにレコード確認
+                →None:
+                    ←RedisのActive_Rules確認
+                    →Active_Rules
+                        ←RDB//Flask-SQLAlchemy
+                            SELECT RDB.TaskTemplates
+                            JOIN Task_Rules...
+                            WHERE Task_Rules IN Active_Rules
+                        →TaskTemplates
+
+                        ←RDB
+                            INSERT RDB.Tasks...
+                        →null
+
+                        ←RDB
+                            SELECT RDB.Tasks
+                            WHERE user_id = user_id
+                            AND status = 0
+                            AND (begin_date < TODAY OR due_date = TODAY)
+                        →Tasks
+
+                    ←RedisにINSERT
+                    →null
+
+                    ←Redisにレコード確認
+                
+                →Tasks
+                    Tasksに優先順位を付加
+                ←response
+
+            タスクの追加
+                ←RDB
+                    INSERT RDB.Tasks
+                →id
+                ←Redis
+                    INSERT
+                →null
+                ←Redis
+                    SELECT *
+                →Tasks
+
