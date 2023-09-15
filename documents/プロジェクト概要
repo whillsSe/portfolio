@@ -151,3 +151,43 @@
 ②end_dateがtodayより未来 //繰り返し期間の確認
     反例：end_dateがtoday以前でも、持ち越し可かつcompleted_atで未達分がある場合は要計上
 ③recurringRulesから、
+
+2023.09.15
+[達成記録をレコードにするアプローチ]
+Tasks
+    id:uuid
+    title:string
+    description:string(text)
+    task_type:Enum('SCHEDULE','TODO_OPTIONAL','TODO_MANADATORY')
+    is_recurring:Boolean=false
+    start_date:タスクの実行期間開始日=1980/01/01
+    end_date:タスクの実行期間最終日=9999/12/31
+    (他タイムスタンプ)
+
+TaskLogs
+    id:number
+    task_id:Tasks.id
+    completed_at:最新のタスク達成日
+    stack:繰り返しタスク積み上がり回数=0
+    (他タイムスタンプ)
+
+    (task_type)-(is_recurring?m(multi):s(single))
+    0-s,0-m,1-s,1-m,2-s,2-m
+
+タスク取得の流れ
+if Tasks.start_date =< today 
+    ? recs 0-s,0-m,1-s,1-m,2-s,2-m
+        if rec.is_recurring
+            ? 0-m,1-m,2-m 
+                rec.id => RecurringRules
+                if checkRecurring():Boolean
+                    ? addTask()
+                    if rec.task_type 
+        
+
+
+
+    task_type
+        0:end_dateが今日以降であれば表示対象Task
+        それ以外：以下の判定
+            1:TaskLogsを取得し、
