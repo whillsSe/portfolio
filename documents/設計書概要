@@ -1,0 +1,67 @@
+
+[概要]
+Todoとスケジュールを一括管理する「タスク管理アプリ」
+タスクのタイプとして以下の3種類を定義する。
+    ・'Schedule'
+        スケジュール。達成対象外
+    ・'Temporary'
+        未達成のまま期限を超過すると、翌日以降表示しないTodo
+    ・'persistent'
+        期限超過時も持ち越すTodo
+タスクには、'One-off(単発)'と'Recurring(反復)'を設定可能。
+つまりおおまかに計六種類のタスクを使い分けることになる。
+
+以下の機能を実装する
+・ユーザーの登録/ログイン/ログアウト
+・タスクＣＲＵＤ
+    a.タスクの取得
+        ⅰ:当日実行可能なタスクの列挙
+        ⅱ:カレンダー表示による、月別表示タスク(&予定)の一覧
+    b.タスクの達成
+    c.タスクの修正
+    d.タスクの削除
+
+[データモデル/クライアント]
+Task:クライアントが取り扱うタスクのデータ概念
+    id:uuid
+    type:ENUM('SCHEDULE','TEMPORARY','PERSISTENT')
+    start_date:
+    end_date:
+    recurring_rules:List<>[]、繰り返しルールかそのidの列挙
+    remaining:
+    completed_at:
+
+RecurringRule:繰り返しルール
+    id:uuid
+    freq:'DAILY','WEEKLY','MONTHLY','YEARLY'
+    interval:number(default=1)
+    weekday:number/毎週何曜日
+    monthday:number/毎月何日(-1で月末,0で全日)
+    bysetpos:number/freqのいくつ目(毎月第3火曜日ならfreq='MONTHLY',bysetpos=3)
+
+[構成]
+・RDB
+・バックエンドプログラム
+・クライアントサイドプログラム
+・(検討中)Redis
+
+[処理フロー]
+ユーザーが登録するTaskのルールを一括で取得する※1
+Recurring_rulesも取得
+(代入してJSON化？)
+
+    <当日タスク取得の場合>
+        繰り返しタスクの場合
+            completed_at~todayまでに条件を満たす日付(dates)を取得
+                Temporaryの場合:dates=todayであれば、表示
+                persistentの場合:dates.length()+remainingの数だけ表示
+        繰り返しscheduleの場合:
+            start_date~todayで条件を満たす日付datesを取得
+            dates[dates.length()+1]=todayであれば、表示
+        単体タスクの場合
+            start_date =< today =< end_dateを判定
+
+    <>
+    
+
+※1:ここでの過剰な取得を避けるため、期間及び必要性を全うしたTaskには、Statusを付与し取得対象外とする必要がありそう。

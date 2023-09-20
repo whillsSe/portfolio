@@ -1,0 +1,35 @@
+       recur-rule-part = ( "FREQ" "=" freq )
+                       / ( "UNTIL" "=" enddate )
+                       / ( "COUNT" "=" 1*DIGIT )
+                       / ( "INTERVAL" "=" 1*DIGIT )
+                       / ( "BYSECOND" "=" byseclist )
+                       / ( "BYMINUTE" "=" byminlist )
+                       / ( "BYHOUR" "=" byhrlist )
+                       / ( "BYDAY" "=" bywdaylist )
+                       / ( "BYMONTHDAY" "=" bymodaylist )
+                       / ( "BYYEARDAY" "=" byyrdaylist )
+                       / ( "BYWEEKNO" "=" bywknolist )
+                       / ( "BYMONTH" "=" bymolist )
+                       / ( "BYSETPOS" "=" bysplist )
+                       / ( "WKST" "=" weekday )
+        
+       freq        = "SECONDLY" / "MINUTELY" / "HOURLY" / "DAILY"
+                   / "WEEKLY" / "MONTHLY" / "YEARLY"
+        
+       enddate     = date / date-time
+        
+       byseclist   = ( seconds *("," seconds) )
+        
+       seconds     = 1*2DIGIT       ;0 to 60
+        
+       byminlist   = ( minutes *("," minutes) )
+        
+       minutes     = 1*2DIGIT       ;0 to 59
+        
+       byhrlist    = ( hour *("," hour) )
+        
+       hour        = 1*2DIGIT       ;0 to 23
+        
+       bywdaylist  = ( weekdaynum *("," weekdaynum) )
+        
+       weekdaynum  = [[plus / minus] ordwk] weekday

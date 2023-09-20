@@ -1,0 +1,15 @@
+2023.09.20
+Tasks
+    id:
+    type:
+    title:
+    start_date:
+    due_date:
+    status:
+
+TaskLogs:
+    id:連番可
+    task_id:
+    completed_date:
+    remaining:
+

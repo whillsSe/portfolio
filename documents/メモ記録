@@ -166,6 +166,7 @@ Tasks
 
 TaskLogs
     id:number
+
     task_id:Tasks.id
     completed_at:最新のタスク達成日
     stack:繰り返しタスク積み上がり回数=0
@@ -194,3 +195,67 @@ if Tasks.start_date =< today
 
 2023.09.19
 task_type
+
+2023.09.20
+task_typeのパラメータ設定の試行錯誤を継続
+1と2は相互に切り替え可能とするつもりなので、最大公約数的パラメータの持ち方をするべし
+場合分けの考え方は、やはり六パターンで考えるべき
+つまり
+数字+r(remainingの意)で、各task_typeの単体・繰り返しパターンを表現
+取得時
+0:starts,ends
+0r:starts,ends,recurs
+1:starts,ends,status
+1r:starts,ends,recurs,completes,remaining
+2:starts,status
+2r:starts,recurs,completes,remaining
+
+取得時補足：
+1r:completesはその日に達成完了していないかを確認する。remainingが≠0の時は、その日に取り消したと判定。
+2r:completesの日～todayまでに発生する回数+remainingを回数として取得
+
+recursの計算が煩雑ではないか？という懸念
+user_idとstartsからtaskの列挙を取得
+task_type=0⇒starts&&endsで表示
+task_type=1→starts&&endsに加え
+    is_recurring:recurring_rulesを参照・取得
+    単体：
+
+
+完了時
+1:status更新
+1r:INSERT(id,completes,remaining)
+2:status更新
+2r:INSERT(id,completes,remaining)
+
+完了解除
+1:status更新
+1r:UPDATE(remaining)/最新レコードのremainigをupdate
+2:status更新
+2r:UPDATE(remaining)/最新レコードのremainigをupdate
+
+1と2の相互乗り換えはこれで対応できるかも。
+ただ、1と1r、2と2rの相互乗り換えを考えるとき
+単体の間:Log更新されず
+繰り返しの間:status更新されず
+で棲み分けできてるけど、remainingやstatusの変更処理が面倒くさいので、不可とする?
+
+単体タスクの完了時処理について
+INSERT(id,completes,remaining)を適用したい
+completes=0で、remaining>0の場合、
+・今日達成したタスクを取り消した可能性
+・以前繰り返しだった時代のremainingが残っていた場合、なんど実行しても積み残しタスクとして表示されてしまう
+→仮に繰り返し↔単体の切り替えを可能にする場合、切り替え時にremainingを0(or1)にしてあげる必要がありそう
+繰り返し↔単体の切り替えは原則不可とする！
+
+[statusがない場合]
+TaskLogsにレコードがないorレコードのremainingが1である場合は未達成、なんて処理になる。
+
+カレンダー表示を考えた時、冗長な設計になる事に気づいたので、ここにきて大幅に設計変更を行う。
+・TaskRuleをクライアントに送信・計算させる方針で一本化
+・単体タスクも繰り返しタスクも、同じテーブル構造を取るようにする
+・Redisの採用は未確定。クライアント↔バックエンドのやりとりの仕方を再度整理
+
+15:52
+    繰り返しルールに関して、RFC5545なる規定があるあしいので解析する
+    https://datatracker.ietf.org/doc/html/rfc5545
