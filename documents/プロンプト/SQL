@@ -1,0 +1,23 @@
+以下のようなテーブルを使用します。
+tasksテーブル
+    id:string/uuid
+    user_id:users.id
+    type:ENUM('SCHEDULE','TEMPORARY','PERSISTENT')
+    title:string
+    start_date:Date
+    due_date:Date
+    rrule_string:string
+
+task_logsテーブル
+    id:連番可
+    task_id:tasks.id
+    completed_at:Date
+    remaining:int
+
+このテーブルに対し、以下のようなSQLを考えてください。
+・以下のレコードを同時に取得できるSQL
+    1.start_dateからend_dateの期間にあるSCHEDULE
+    2.start_dateからend_dateの期間にあるTEMPORARY
+    3.start_dateが今日以前であるPERSISTENT
+    なお、2及び3については、task_logsテーブルのcompleted_at及びremainingをレコードに含むこと。
+    task_logsにtask_idとしてtasksk.idが存在しない場合でも、空値で取得すること。

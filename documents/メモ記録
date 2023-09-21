@@ -259,3 +259,63 @@ TaskLogsにレコードがないorレコードのremainingが1である場合は
 15:52
     繰り返しルールに関して、RFC5545なる規定があるあしいので解析する
     https://datatracker.ietf.org/doc/html/rfc5545
+
+2023.09.21
+書き散らしコピペ
+DBから取得する場合
+        SCHEDULE,TEMPORARY:start =< today =< end であるもの全て
+        PERSISTENT:start =< today であるもの
+        'SELECT * FROM tasks t WHERE user_id = ? AND start_date =< ? AND ((end_date => ? AND type != 2) OR type = 2);'
+        で取得⇒JSON化
+        ここには完了済みの繰り返しタスクが含まれる可能性がある。
+
+        クライアントサイドでは
+            data = json.parse();//おそらくtaskレコードの列挙になってる
+            let tasks = new List<Task>[];
+            for(let task of data){ 
+                switch(task.type){
+                    case 0:
+                        if(!task.recurring_rule){
+                            tasks.append(task);
+                        }else{
+                            let rrule = new RRule({
+                                dtstart:task.start_date,
+                                until:task.end_date,
+                                rruleString:task.recurring_rule
+                            })
+                            if(rrule.before(new Date(),true)){
+                                task.rrule = rrule;#taskオブジェクトの中にrruleを含めてしまった方が良さそうじゃない？
+                                tasks.append(task);
+                            }
+                        }
+                        break;
+                    case 1:
+                        if(!task.recurring_rule){
+                            task.append(task);
+                        }else{
+                            let rrule = new RRule({
+                                #省略
+                            })
+                        }
+                        break;
+                    case 2:
+                        if(!task.recurring_rule){
+                            if(task.completed_at === undefined || task.remaining === 0){
+                                tasks.append(task);
+                            }
+                            
+                        }else{
+                            let rrule = new RRule({
+                                dtstart:start_date,
+                                until:end_date,
+                                rruleString:task.recurring_rule
+                            })
+                            #conpleted_at+1~todayまでのbefore迄の回数+remainingをtask残り回数としてオブジェクト化
+                        }
+                        break;
+                }
+            }
+        みたいなコードを書くんだろう
+
+        jsonで送られてくる"型"
+        クライアントサイドで扱う"型"の区別が必要？

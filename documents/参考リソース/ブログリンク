@@ -1,1 +1,6 @@
 https://taker.hatenablog.com/entry/2019/07/03/213225
+
+RRule.prototype.before(dt, inc=false)
+Returns the last recurrence before the given Date instance. The inc argument defines what happens if dt is an occurrence. With inc == true, if dt itself is an occurrence, it will be returned.
+
+    #inc=trueにすれば、当日もおそらく含まれる

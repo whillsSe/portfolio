@@ -1,15 +1,16 @@
-2023.09.20
-Tasks
-    id:
-    type:
-    title:
-    start_date:
-    due_date:
-    status:
+2023.09.21
+tasksテーブル
+    id:string/uuid
+    user_id:users.id
+    type:ENUM('SCHEDULE','TEMPORARY','PERSISTENT')
+    title:string
+    start_date:Date
+    due_date:Date
+    rrule_string:string
 
-TaskLogs:
+task_logsテーブル
     id:連番可
-    task_id:
-    completed_date:
-    remaining:
+    task_id:tasks.id
+    completed_at:Date
+    remaining:int
 

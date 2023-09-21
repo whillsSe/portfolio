@@ -6,7 +6,7 @@ Todoとスケジュールを一括管理する「タスク管理アプリ」
         スケジュール。達成対象外
     ・'Temporary'
         未達成のまま期限を超過すると、翌日以降表示しないTodo
-    ・'persistent'
+    ・'Persistent'
         期限超過時も持ち越すTodo
 タスクには、'One-off(単発)'と'Recurring(反復)'を設定可能。
 つまりおおまかに計六種類のタスクを使い分けることになる。
@@ -27,17 +27,14 @@ Task:クライアントが取り扱うタスクのデータ概念
     type:ENUM('SCHEDULE','TEMPORARY','PERSISTENT')
     start_date:
     end_date:
-    recurring_rules:List<>[]、繰り返しルールかそのidの列挙
+    due_time:option
+    recurring_rule:option/string?
     remaining:
     completed_at:
 
 RecurringRule:繰り返しルール
     id:uuid
-    freq:'DAILY','WEEKLY','MONTHLY','YEARLY'
-    interval:number(default=1)
-    weekday:number/毎週何曜日
-    monthday:number/毎月何日(-1で月末,0で全日)
-    bysetpos:number/freqのいくつ目(毎月第3火曜日ならfreq='MONTHLY',bysetpos=3)
+    value:RRuleStringとして記録。#'RRULE:FREQ=DAILY;COUNT=10'的なやつね
 
 [構成]
 ・RDB
@@ -46,22 +43,24 @@ RecurringRule:繰り返しルール
 ・(検討中)Redis
 
 [処理フロー]
-ユーザーが登録するTaskのルールを一括で取得する※1
-Recurring_rulesも取得
 (代入してJSON化？)
 
     <当日タスク取得の場合>
-        繰り返しタスクの場合
-            completed_at~todayまでに条件を満たす日付(dates)を取得
-                Temporaryの場合:dates=todayであれば、表示
-                persistentの場合:dates.length()+remainingの数だけ表示
-        繰り返しscheduleの場合:
-            start_date~todayで条件を満たす日付datesを取得
-            dates[dates.length()+1]=todayであれば、表示
-        単体タスクの場合
-            start_date =< today =< end_dateを判定
-
-    <>
+        SCHEDULE
+            One-off:start =< today =< end
+            Recurring:RRule.before(todat,true) === today
+        TEMPORARY
+            One-off:start =< today =< today && (remaining === 0 || remaining === undefined)
+            Recurring:RRule.before(todat,true) === today
+        PERSISTENT
+            One-off:start =< today && (remaining === 0 || remaining === undefined)
+            Recurring:remaining + RRule.between(completed_at+1,today,true).length
     
+    流れとしては、ざっくりDBから取得
+    ⇒   Calendar:そのままTaskに
+        その他:
+        ⇒Recurring判定:
+        type=2:
+        type=3:Completed_atからtodayまでに発生したタスクの回数+remainingをnとする
 
 ※1:ここでの過剰な取得を避けるため、期間及び必要性を全うしたTaskには、Statusを付与し取得対象外とする必要がありそう。
