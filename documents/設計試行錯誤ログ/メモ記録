@@ -319,3 +319,19 @@ DBから取得する場合
 
         jsonで送られてくる"型"
         クライアントサイドで扱う"型"の区別が必要？
+
+2023.09.22
+達成処理:
+        completed_at = today
+        remaining = (クライアントタスクオブジェクトのremain値) -1
+        にUPDATE
+
+    取り消し処理:
+        remaining = (テーブル上remaining値) +1
+        TEMPORARYであれば、remainingの数は無関係/PERSISTENTなら、残数が増える
+
+
+    remainingの初期値について
+        初期値=1:繰り返しタスクの計算時、completed_atから意味を判断し分けないといけない
+        初期値=-1:繰り返しタスクの計算時、-1を0と読み替えたうえでRRule.between.lengthしないといけない
+        ⇒初期値はnull値(undeifned)とするのが正解？INDEXにさえしなければ良い(はず)

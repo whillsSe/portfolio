@@ -25,12 +25,13 @@ Todoとスケジュールを一括管理する「タスク管理アプリ」
 Task:クライアントが取り扱うタスクのデータ概念
     id:uuid
     type:ENUM('SCHEDULE','TEMPORARY','PERSISTENT')
-    start_date:
-    end_date:
+    start_date:Date:default=1980/01/01
+    end_date:Date:default=9999/12/31
+    start_time:option
     due_time:option
     recurring_rule:option/string?
-    remaining:
-    completed_at:
+    remaining:default=null
+    completed_at:default=null
 
 RecurringRule:繰り返しルール
     id:uuid
@@ -41,6 +42,10 @@ RecurringRule:繰り返しルール
 ・バックエンドプログラム
 ・クライアントサイドプログラム
 ・(検討中)Redis
+
+[決定事項]
+    remainingの初期値:null
+
 
 [処理フロー]
 (代入してJSON化？)
@@ -55,12 +60,37 @@ RecurringRule:繰り返しルール
         PERSISTENT
             One-off:start =< today && (remaining === 0 || remaining === undefined)
             Recurring:remaining + RRule.between(completed_at+1,today,true).length
-    
-    流れとしては、ざっくりDBから取得
-    ⇒   Calendar:そのままTaskに
-        その他:
-        ⇒Recurring判定:
-        type=2:
-        type=3:Completed_atからtodayまでに発生したタスクの回数+remainingをnとする
 
-※1:ここでの過剰な取得を避けるため、期間及び必要性を全うしたTaskには、Statusを付与し取得対象外とする必要がありそう。
+
+    ※1:ここでの過剰な取得を避けるための条件付けが重要
+    SCHEDULE.One-off:期間内
+    SCHEDULE.Recurring:期間内
+    TEMPORARY.One-off:期間内かつremaining != 0
+    TEMPORARY.Recurring☆:期間内
+    PERSISTENT.One-off:開始日以降かつremaining != 0
+    PERSISTENT.Recurring☆:開始日以降
+
+    ☆：クライアント側で残数計算。
+        remaining != 0にしちゃうと、過去達成してremaining=0にしたものが取得対象外となる。
+        日付かつremainig…をしないといけなくなる。
+
+    ①ユーザー+日付情報から、※1のTaskを取得
+    ②クライアント側で残タスク数の計算を行う
+    ③残タスク数・タスク種を反映した表示を行う
+
+[懸念事項]
+RRuleStringと入力UIの連動
+    入力⇒Stringはできる
+    String⇒入力？？？
+    RRuleオブジェクトのひな形
+
+DBに問い合わせするシーン
+初回(日付マタギ)
+タスク新規登録/ルール変更などのsubmitを行った場合
+
+(逆に)DBに問い合わせしないシーン
+タスク単体の達成ボタン操作
+アドレスバーは変わるけど送信しない画面戻り
+
+
+    
