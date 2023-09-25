@@ -1,0 +1,73 @@
+class Task {
+    constructor(id, title, startDate, endDate, recurrenceRule) {
+        this.id = id;
+        this.title = title;
+        this.startDate = startDate;  // Date object
+        this.endDate = endDate;  // Date object
+        this.recurrenceRule = recurrenceRule;  // RRule object or null for non-recurring tasks
+    }
+
+    generateEvents(currentDateRange) {
+        // 仮定: `getOccurrences` は RRule から特定の期間内のすべての繰り返し日付を取得する
+        const occurrences = this.recurrenceRule ? this.recurrenceRule.getOccurrences(currentDateRange) : [this.startDate];
+        return occurrences.map(date => new Event(this.id, this.title, date));
+    }
+}
+
+class Event {
+    constructor(taskId, title, date) {
+        this.taskId = taskId;
+        this.title = title;
+        this.date = date;  // Date object
+    }
+}
+
+class Calendar {
+    constructor() {
+        this.eventsByDate = {};  // e.g., {'2023-09-19': [event1, event2, ...]}
+    }
+
+    addEvents(events) {
+        for (const event of events) {
+            const dateStr = event.date.toISOString().split('T')[0];  // Format as 'YYYY-MM-DD'
+            if (!this.eventsByDate[dateStr]) {
+                this.eventsByDate[dateStr] = [];
+            }
+            this.eventsByDate[dateStr].push(event);
+        }
+    }
+
+    display() {
+        // 日付ごとにイベントを表示するコード
+        for (const dateStr in this.eventsByDate) {
+            const events = this.eventsByDate[dateStr];
+            // ... 何らかの表示ロジック
+        }
+    }
+}
+
+// サーバーからタスクデータをフェッチし、Task オブジェクトの配列を作成
+const fetchedTasksData = fetchTasksFromServer();
+const tasks = fetchedTasksData.map(taskData => new Task(
+    taskData.id,
+    taskData.title,
+    new Date(taskData.startDate),
+    new Date(taskData.endDate),
+    taskData.recurrenceRule ? new RRule(taskData.recurrenceRule) : null
+));
+
+// 現在のカレンダー表示範囲を指定（仮定）
+const currentDateRange = {
+    start: new Date('2023-09-01'),
+    end: new Date('2023-09-30')
+};
+
+// カレンダーオブジェクトを作成し、各タスクからイベントを生成してカレンダーに追加
+const calendar = new Calendar();
+for (const task of tasks) {
+    const events = task.generateEvents(currentDateRange);
+    calendar.addEvents(events);
+}
+
+// カレンダーの表示
+calendar.display();

@@ -1,0 +1,41 @@
+[テーブル構造]
+設計書.xlsx-「テーブルパラメータ表」
+
+[エンドポイント]
+設計書.xlsx-「エンドポイント」
+
+[処理フロー]
+バックエンド↔DB
+    start_date<=b AND ((end_date =< a AND type!=2)OR(type=2))
+
+クライアントサイド↔バックエンド
+期間を与えてtaskListをやりとり
+
+クライアントサイド ↔ 表示
+[今日の実行対象表示]
+    ①Tasksからtask_typeとdateで絞り込む(ScheduleManager)
+        task_type:0,1:start_date =< today =< end_date
+        task_type:2:start_date =< today
+    ②表示するカード数(n)を計算し、その値を元に表示する/しないを判定する
+    SCHEDULE:n=1
+    TEMPORARY:n=remaining
+    TEMPORARY/recurring:n=remaining + rrule.between(comp+1,today) ※最大値は1
+    PERSISTENT:n=remaining
+    PERSISTENT/recurring:remaining + rrule.between(comp+1,today)
+
+[カレンダー表示]
+    ☆UIをよく検討する必要アリ!☆
+    ・event→カレンダー上での表示を…
+    ①Tasksからtask_typeとdateで絞り込む
+    ②task.rruleで分岐
+        true:
+            task.rrule.between(...)でdatesを取得。
+            各date毎にeventを作成。eventsに追加。
+        false:
+            start~endをstart~endとする。
+    
+    UIに表示するかどうかはトグル可能とするのが良さそう。
+    
+            
+[カレンダー選択日表示]
+    eventsに対し、選択した日に対応するeventからカードを作り表示する。
