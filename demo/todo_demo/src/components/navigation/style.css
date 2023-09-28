@@ -1,0 +1,17 @@
+.navigation nav{
+    display:flex;
+    justify-content: space-around;
+}
+.navigation.top{
+    background-color: red;
+}
+.navigation.bottom{
+    background-color: blue;
+}
+nav a{
+    display:block;
+    height:100%;
+}
+.navigation_button{
+    aspect-ratio: 1/1;
+}

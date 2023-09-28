@@ -4,3 +4,6 @@ RRule.prototype.before(dt, inc=false)
 Returns the last recurrence before the given Date instance. The inc argument defines what happens if dt is an occurrence. With inc == true, if dt itself is an occurrence, it will be returned.
 
     #inc=trueにすれば、当日もおそらく含まれる
+
+marshmalloとか
+https://qiita.com/voygerrr/items/4c78d156fc91111798d5

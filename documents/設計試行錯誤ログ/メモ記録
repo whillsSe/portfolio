@@ -335,3 +335,86 @@ DBから取得する場合
         初期値=1:繰り返しタスクの計算時、completed_atから意味を判断し分けないといけない
         初期値=-1:繰り返しタスクの計算時、-1を0と読み替えたうえでRRule.between.lengthしないといけない
         ⇒初期値はnull値(undeifned)とするのが正解？INDEXにさえしなければ良い(はず)
+
+2023.09.26
+figmaにてワイヤーフレーム作成。
+https://www.figma.com/file/wdYByQQnoMZNTtRUeDaILH/Portfolio?type=design&t=jTJY4tnjoYr1ev8s-6
+
+2023.09.27
+[Reactコンポーネント構造]:<Component>
+<App>
+├Router
+    ├<Navigation>
+    └Switch
+        └Route…(パス毎に分岐)
+            ├<ContentArea>
+            │   ├/home
+            │   ├/calendar
+            │   ├/view-tasks
+            │   └/profile
+            └<SideWindow>
+                ├/task/create
+                ├/task/:taskId
+                └/task/:taskId/edit
+            
+2023.09.28
+PythonのSQLAlchemyのmodel。authとapiで必要なオブジェクトちゃうかったわ。
+dev/auth/tascal/tascal_auth/models.py
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy_utils import UUIDType
+db = SQLAlchemy()
+
+
+class Authentication(db.Model):
+    __tablename__ = 'authentication'
+    id = db.Column(UUIDType(binary=False), primary_key=True)
+    email = db.Column(db.String(255), nullable=False, unique=True)
+    password = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+
+class RefreshToken(db.Model):
+    __tablename__ = 'refresh_tokens'
+    refresh_token = db.Column(db.String(255), primary_key=True)
+    user = db.Column(UUIDType(binary=False), nullable=False)
+    is_invalidated = db.Column(db.String(255), nullable=False)
+    expiration_time = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+
+class Tag(db.Model):
+    __tablename__ = 'tags'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tag = db.Column(db.String(255), nullable=False, unique=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(UUIDType(binary=False), db.ForeignKey('authentication.id'), primary_key=True)
+    username = db.Column(db.String(255), nullable=False, unique=True)
+    profilename = db.Column(db.String(255), nullable=False, default='')
+    created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+
+class Task(db.Model):
+    __tablename__ = 'tasks'
+    id = db.Column(UUIDType(binary=False), primary_key=True)
+    author = db.Column(UUIDType(binary=False), db.ForeignKey('users.id'), nullable=False)
+    title = db.Column(db.String(255), nullable=False)
+    type = db.Column(db.Integer, nullable=False)
+    rrule_string = db.Column(db.String(255), nullable=False, default='')
+    start_date = db.Column(db.Date, nullable=False, default='1980-01-01')
+    end_date = db.Column(db.Date, nullable=False, default='9999-12-31')
+    start_time = db.Column(db.Time, nullable=True)
+    due_time = db.Column(db.Time, nullable=True)
+    completed_at = db.Column(db.DateTime, nullable=False,default=db.func.current_timestamp())
+    remaining = db.Column(db.Integer, nullable=False, default=1)
+    created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+
+task_tag = db.Table('task_tag',db.Column('tag_id',db.Integer,db.ForeignKey('tags.id'),nullable=False,primary_key=True),db.Column('task_id',UUIDType(binary=False),db.ForeignKey('tasks.id',ondelete='CASCADE'),nullable=False,primary_key=True))
+
+# Add foreign key relationships
+User.authentication = db.relationship('Authentication', back_populates='users', uselist=False)
+Task.user = db.relationship('User', back_populates='tasks')

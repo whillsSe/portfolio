@@ -37,5 +37,14 @@
     UIに表示するかどうかはトグル可能とするのが良さそう。
     
             
-[カレンダー選択日表示]
-    eventsに対し、選択した日に対応するeventからカードを作り表示する。
+[言語選定]
+auth:Python
+api:Python
+db:mysql
+app:nginx(react)
+(他、リバースプロキシ等コンテナ)
+
+[環境変数など]
+開発途中は.envに記述
+デプロイ時はdockerの環境変数に記述
+https://qiita.com/ninomiyt/items/ee676d7f9b780b1d44e8
