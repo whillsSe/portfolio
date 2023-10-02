@@ -1,7 +1,10 @@
-from tascal_auth import db,ma
+import random
+import string
+from tascal_auth import db,ma,bcrypt
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 from sqlalchemy_utils import UUIDType
+from marshmallow import fields,validate
 import uuid
 
 class Authentication(db.Model):
@@ -14,13 +17,23 @@ class Authentication(db.Model):
 
     user = db.relationship('User',back_populates='auth',uselist=False)
 
+    @staticmethod
+    def hash_password(password):
+        return bcrypt.generate_password_hash(password).decode("utf-8")
+    
+    def check_password(self,password):
+        return bcrypt.check_password_hash(self.password,password)
+
     @classmethod
     def find_by_email(cls,email):
         return cls.query.filter_by(email=email).first()
     
     @classmethod
-    def find_by_uuid(cls,uuid):
-        return cls.query.filter_by(id=uuid).first()
+    def find_by_uuid(cls,id):
+        return cls.query.filter_by(id=id).first()
+
+    def uuid_str(self):
+        return self.id.hex
 
     def save_to_db(self):
         db.session.add(self)
@@ -28,7 +41,7 @@ class Authentication(db.Model):
 
     def __init__(self,email,password):
         self.email = email
-        self.password = password
+        self.password = self.hash_password(password)
 
 class RefreshToken(db.Model):
     __tablename__ = 'refresh_tokens'
@@ -48,7 +61,6 @@ class RefreshToken(db.Model):
         tokens = cls.query.filter_by(user=user_id).all()
         for token in tokens:
             token.is_invalidated = True
-        db.session.commit()
 
     def __init__(self,refesh_token,user_id):
         self.refresh_token = refesh_token
@@ -62,7 +74,7 @@ class RefreshToken(db.Model):
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(UUIDType(binary=False), db.ForeignKey('authentication.id'), primary_key=True)
-    username = db.Column(db.String(255), nullable=False, unique=True,default=uuid.uuid4)
+    username = db.Column(db.String(255), nullable=False, unique=True)
     profilename = db.Column(db.String(255), nullable=False, default='')
     created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
@@ -73,17 +85,41 @@ class User(db.Model):
     def find_by_username(cls,requsername):
         return cls.query.filter_by(username=requsername).first()
     
-    def find_by_user_id(cls,uuid):
-        return cls.query.filter_by(id=uuid).first()
+    @classmethod
+    def find_by_user_id(cls,id):
+        return cls.query.filter_by(id=id).first()
     
-    def __init__(self,user_id):
+    def uuid_str(self):
+        return self.id.hex
+    
+    def __init__(self,user_id,username):
         self.id = user_id
+        self.username = username
 
     def save_to_db(self):
         db.session.add(self)
         db.session.commit()
 
+    def generate_random_username(length=10):
+        if length < 5 or length > 15:
+            raise ValueError("Username length must be between 5 and 15 characters")
+        while True:
+            prefix_length = random.randint(1, length - 4)  # Ensure there's room for at least 4 random alphanumeric characters
+            prefix = ''.join(random.choices(string.ascii_letters, k=prefix_length))
+            suffix = ''.join(random.choices(string.ascii_letters + string.digits, k=length - prefix_length))
+            username:string = prefix + suffix
+            if not User.find_by_username(username):
+                return username
+
+class AuthenticationSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Authentication
+        exclude = ('created_at','updated_at')
+    email = fields.Email(required=True,validate=fields.validate.Length(min=1,max=120))
+
 class UserSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = User
         exclude = ('created_at','updated_at')
+    username = fields.Str(required=True,validate=validate.Regexp(r'^[a-zA-Z][a-zA-Z0-9]{4,14}$'))
+    profilename = fields.Str(required=True,validate=validate.Regexp(r'^[^<>{}"/\[\];:=+*!@#$%^&*(),.?`~]*$'))

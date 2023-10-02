@@ -29,8 +29,8 @@ class Login(Resource):
             if user:
                 auth = user.auth
         
-        if auth and bcrypt.check_password_hash(auth.password, password):
-            uuid = auth.id
+        if auth and auth.check_password(password):
+            uuid = auth.uuid_str()
             access_token = None
             if data['authUpdateRequest']:
                 access_token = create_access_token(identity=uuid,additional_claims={"credentialUpdatePermission":"True"})
