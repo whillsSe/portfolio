@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- ホスト: 127.0.0.1
--- 生成日時: 2023-10-02 04:29:42
+-- 生成日時: 2023-10-03 09:41:17
 -- サーバのバージョン： 10.4.28-MariaDB
 -- PHP のバージョン: 8.2.4
 
@@ -37,13 +37,6 @@ CREATE TABLE `authentication` (
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- テーブルのデータのダンプ `authentication`
---
-
-INSERT INTO `authentication` (`id`, `email`, `password`, `created_at`, `updated_at`) VALUES
-('d139ae4b69604b60815f52c0458d3950', 'demoaccount@demo.com', '$2b$12$o.0Vl1QFwpE618W2xIsx/O0FglTvOQLT1OVKK81tk9EMlL1Ew0hZi', '2023-10-02 11:21:48', '2023-10-02 11:21:48');
-
 -- --------------------------------------------------------
 
 --
@@ -58,13 +51,6 @@ CREATE TABLE `refresh_tokens` (
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- テーブルのデータのダンプ `refresh_tokens`
---
-
-INSERT INTO `refresh_tokens` (`refresh_token`, `user`, `is_invalidated`, `expiration_time`, `created_at`, `updated_at`) VALUES
-('2e7db295-48ca-4660-bc98-450149750558', 'd139ae4b69604b60815f52c0458d3950', '0', '2023-11-01 02:21:48', '2023-10-02 11:21:48', '2023-10-02 11:21:48');
 
 -- --------------------------------------------------------
 
@@ -89,8 +75,8 @@ CREATE TABLE `tasks` (
   `id` varchar(255) NOT NULL,
   `author` varchar(255) NOT NULL,
   `title` varchar(255) NOT NULL,
-  `type` int(11) NOT NULL,
-  `rrule_string` varchar(255) NOT NULL DEFAULT '空文字列',
+  `type` tinyint(1) NOT NULL,
+  `rrule_string` varchar(255) NOT NULL DEFAULT '',
   `start_date` date NOT NULL DEFAULT '1980-01-01',
   `end_date` date NOT NULL DEFAULT '9999-12-31',
   `start_time` time DEFAULT NULL,
@@ -128,13 +114,6 @@ CREATE TABLE `users` (
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- テーブルのデータのダンプ `users`
---
-
-INSERT INTO `users` (`id`, `username`, `profilename`, `created_at`, `updated_at`) VALUES
-('d139ae4b69604b60815f52c0458d3950', 'demoacc0unt', 'testAccontProfileName', '2023-10-02 11:21:48', '2023-10-02 11:25:09');
 
 --
 -- ダンプしたテーブルのインデックス
@@ -214,14 +193,14 @@ ALTER TABLE `tasks`
 -- テーブルの制約 `task_tag`
 --
 ALTER TABLE `task_tag`
-  ADD CONSTRAINT `feky_tags_id` FOREIGN KEY (`tag_id`) REFERENCES `tags` (`id`),
-  ADD CONSTRAINT `fkey_tasks_id` FOREIGN KEY (`task_id`) REFERENCES `tasks` (`id`);
+  ADD CONSTRAINT `feky_tags_id` FOREIGN KEY (`tag_id`) REFERENCES `tags` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fkey_tasks_id` FOREIGN KEY (`task_id`) REFERENCES `tasks` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- テーブルの制約 `users`
 --
 ALTER TABLE `users`
-  ADD CONSTRAINT `fkey_authentication_id` FOREIGN KEY (`id`) REFERENCES `authentication` (`id`);
+  ADD CONSTRAINT `fkey_authentication_id` FOREIGN KEY (`id`) REFERENCES `authentication` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

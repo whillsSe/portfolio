@@ -18,6 +18,7 @@ app.config['JWT_COOKIE_CSRF_PROTECT'] = False
 
 app.config['SQLALCHEMY_DATABASE_URI'] = settings.DB_URI
 app.config['SQLALCHEMY_ECHO'] = settings.DB_ECHO
+app.config['SERVER_NAME'] = settings.SERVER_NAME
 
 api = Api(app)
 jwt = JWTManager(app)
@@ -29,6 +30,7 @@ from tascal_auth.resources.authentication import AuthenticationResource
 from tascal_auth.resources.login import Login
 from tascal_auth.resources.user import UserResource 
 from tascal_auth.resources.logout import Logout
+from tascal_auth.resources.refresh_access_token import AccessTokenRefreshResource
 
 with app.app_context():
     db.create_all()
@@ -38,4 +40,5 @@ api.add_resource(AuthenticationResource,'/authentication')
 api.add_resource(Login,'/login')
 api.add_resource(UserResource,'/user')
 api.add_resource(Logout,'/logout')
+api.add_resource(AccessTokenRefreshResource,'/token/refresh')
 

@@ -1,6 +1,5 @@
 from sqlalchemy import Integer, TypeDecorator
 
-
 class EnumType(TypeDecorator):
     impl = Integer
 
