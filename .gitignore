@@ -1,2 +1,7 @@
 dev/auth/myenv/*
 dev/api/myenv/*
+dev/shared-keys
+dev/.env
+dev/db/*
+dev/nginx/server.crt
+dev/nginx/server.key

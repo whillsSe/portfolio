@@ -1,0 +1,63 @@
+version: '3'
+
+services:
+  mysql:
+    image: mysql:latest
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASS_ROOT}
+      - MYSQL_USER_API=${DB_USER_API}
+      - MYSQL_USER_AUTH=${DB_USER_AUTH}
+      - MYSQL_PASS_API=${DB_PASS_API}
+      - MYSQL_PASS_AUTH=${DB_PASS_AUTH}
+    volumes:
+      - ./db/data/:/var/lib/mysql
+      - ./db/01-init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./db/02-init-users.sh:/docker-entrypoint-initdb.d/02-init-users.sh
+  # APIサービスの設定
+  api:
+    build:
+      context: ./
+      dockerfile: api/tascal/Dockerfile
+    environment:
+      - JWT_PUBLIC_KEY_PATH=/keys/public_key.pem
+      - DB_ACCOUNT=${DB_USER_API}
+      - DB_PASSWORD=${DB_PASS_API}
+      - DB_NAME=${DB_NAME}
+      - DB_SERVICE_NAME=mysql
+      - SQLALCHEMY_ECHO=${SQLALCHEMY_ECHO}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    # ... 他の設定 ...
+
+  # Authサービスの設定
+  auth:
+    build:
+      context: ./
+      dockerfile: auth/tascal/Dockerfile
+    environment:
+      - JWT_PUBLIC_KEY_PATH=/keys/public_key.pem
+      - JWT_PRIVATE_KEY_PATH=/keys/private_key.pem
+      - DB_ACCOUNT=${DB_USER_AUTH}
+      - DB_PASSWORD=${DB_PASS_AUTH}
+      - DB_NAME=${DB_NAME}
+      - DB_SERVICE_NAME=mysql
+      - SQLALCHEMY_ECHO=${SQLALCHEMY_ECHO}
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # Nginxサービスの設定
+  nginx:
+    build:
+      context: ./nginx
+    ports:
+      - "80:80"    # HTTP
+      - "443:443"  # HTTPS（SSLを使用する場合）
+    depends_on:
+      - api
+      - auth
