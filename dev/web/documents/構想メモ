@@ -1,0 +1,8 @@
+stateで保持するもの
+    アクセストークン
+    ユーザー情報
+    取得したtaskリスト
+
+切り離すロジック
+    taskのschedule
+    fetch関連

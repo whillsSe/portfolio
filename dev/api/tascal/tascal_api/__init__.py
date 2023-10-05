@@ -13,6 +13,7 @@ import settings
 app = Flask(__name__)
 
 app.config['JWT_PUBLIC_KEY'] = settings.PUBLIC_KEY #デプロイ時はdockerの環境変数から読み込む
+app.config['JWT_ALGORITHM'] = settings.JWT_ALGORITHM
 app.config['JWT_TOKEN_LOCATION'] = ['headers']
 
 app.config['SQLALCHEMY_DATABASE_URI'] = settings.DB_URI

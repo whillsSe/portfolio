@@ -47,7 +47,7 @@ class RefreshToken(db.Model):
     __tablename__ = 'refresh_tokens'
     refresh_token = db.Column(db.String(255), primary_key=True)
     user = db.Column(UUIDType(binary=False), nullable=False)
-    is_invalidated = db.Column(db.String(255), nullable=False,default=False)
+    is_invalidated = db.Column(db.Boolean, nullable=False,default=False)
     expiration_time = db.Column(db.DateTime, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
@@ -61,6 +61,13 @@ class RefreshToken(db.Model):
         tokens = cls.query.filter_by(user=user_id).all()
         for token in tokens:
             token.is_invalidated = True
+
+    @classmethod
+    def is_refresh_token_valid(cls,token):
+        record = cls.find_by_refresh_token(token)
+        if (not record) or record.is_invalidated == False:
+            return False
+        return True
 
     def __init__(self,refesh_token,user_id):
         self.refresh_token = refesh_token

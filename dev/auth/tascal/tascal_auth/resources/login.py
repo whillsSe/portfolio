@@ -5,22 +5,11 @@ class Login(Resource):
     parser.add_argument('login_info',required=True)
     parser.add_argument('password',required=True)
     parser.add_argument('authUpdateRequest',type=str,required=False)
-    @jwt_required(optional=True,refresh=True)
     def post(self):
         data = Login.parser.parse_args()
         login_info = data['login_info']
         password = data['password']
         auth = None
-        oldToken = get_jwt()
-        if oldToken:
-            print("Request has oldToken!")
-            print(oldToken)
-            token = RefreshToken.find_by_refresh_token(oldToken.get("jti"))
-            if token:
-                token.is_invalidated = True
-                token.save_to_db()
-        else:
-            pass
 
         if '@' in login_info:
             auth = Authentication.find_by_email(login_info)
